@@ -28,8 +28,8 @@ co(function *() {
     var conn = yield rdb.conn(opt); // create connection
     yield rdb.setup(conf); // create db and tables
 
-    yield rdb.run(r.table('test).insert({ data: 'awesome data' }), conn) // run db query
-    yield rdb.run(r.table('test), conn) // run db query and apply toArray for cursor
+    yield rdb.run(r.table('test').insert({ data: 'awesome data' }), conn) // run db query
+    yield rdb.run(r.table('test'), conn) // run db query and apply toArray for cursor
 
     yield rdb.clear(['firstTableName', 'secondTableName'], conn) // clear tables
     yield rdb.clear(conn) // clear all tables
