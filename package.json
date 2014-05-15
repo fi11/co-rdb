@@ -1,0 +1,27 @@
+{
+  "name": "co-rdb",
+  "version": "0.0.1",
+  "description": "Rethinkdb driver wrapper for Co",
+  "main": "index",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fi11/co-rdb.git"
+  },
+  "keywords": [
+    "co",
+    "rethinkdb"
+  ],
+  "bugs": {
+    "url": "https://github.com/fi11/co-rdb/issues"
+  },
+  "homepage": "https://github.com/fi11/co-rdb",
+  "author": "Pavel Silin",
+  "license": "MIT",
+  "devDependencies": {
+    "rethinkdb": "~1.12.0-0",
+    "mocha": "~1.18.2",
+    "chai": "~1.9.1",
+    "co": "~3.0.6"
+  },
+  "dependencies": {}
+}
