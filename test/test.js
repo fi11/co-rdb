@@ -32,6 +32,8 @@ before(function(done) {
 describe('Connection', function() {
     it('Should create connection', function(done) {
         co(function *() {
+            var conn = yield rdb.conn(opt);
+
             r.dbList().run(conn, function(err, res) {
                 expect(err).to.be.null;
                 done();
@@ -55,6 +57,26 @@ describe('Run query', function() {
 
             expect(res.map(function(i) { return i.cnt }))
                 .to.include.members(['test1', 'test2']);
+        })(done);
+    });
+});
+
+describe('Pool', function() {
+    it('Should have acquire property', function(done) {
+        co(function *(){
+            var pool = rdb.createPool(opt);
+
+            expect(pool.acquire).to.exist;
+        })(done);
+    });
+
+    it('Should run query with pool', function(done) {
+        co(function *(){
+            var pool = rdb.createPool(opt);
+
+            var res = yield rdb.run(r.table('t1').get(1), pool);
+
+            expect(res).to.eql({ id: 1, cnt: 'test1' });
         })(done);
     });
 });

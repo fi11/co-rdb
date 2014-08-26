@@ -23,5 +23,7 @@
     "co": "~3.0.6",
     "rethinkdb": "~1.13.0-3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "generic-pool": "~2.1.1"
+  }
 }

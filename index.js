@@ -1,5 +1,5 @@
+var Pool = require('generic-pool').Pool;
 var rdb;
-
 try { rdb = require('rethinkdb') } catch (err) {}
 
 function getConnection(options) {
@@ -9,9 +9,23 @@ function getConnection(options) {
     }
 }
 
-function runQuery(query, conn) {
+function createPool(connOptions, options) {
+    options = options || {};
+
+    return Pool({
+        name: 'rethinkdb',
+        create: function(done) { return rdb.connect(connOptions, done) },
+        destroy: function(conn) { return conn.close() },
+        max: options.max || 10,
+        min: options.min || 2,
+        idleTimeoutMillis: options.idleTimeout || 30000
+    });
+}
+
+function runQuery(query, connOrPool) {
     return function(fn) {
-        return query.run(conn, function(err, resultOrCursor) {
+
+        function callback(err, resultOrCursor) {
             if (err)  {
                 fn(err);
             } else if (resultOrCursor && resultOrCursor.toArray) {
@@ -19,7 +33,19 @@ function runQuery(query, conn) {
             } else {
                 fn(null, resultOrCursor);
             }
-        });
+
+            connOrPool.release && connOrPool.release(this);
+        }
+
+        if (connOrPool.acquire) {
+            return connOrPool.acquire(function(err, conn) {
+                if (err) fn(err);
+
+                return query.run(conn, callback.bind(conn));
+            });
+        }
+
+        return query.run(connOrPool, callback);
     };
 }
 
@@ -76,3 +102,4 @@ exports.run = runQuery;
 exports.conn = getConnection;
 exports.setup = setup;
 exports.clear = clearTables;
+exports.createPool = createPool;
