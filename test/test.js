@@ -5,19 +5,24 @@ var r = require('rethinkdb');
 var opt = { host:'localhost', port: 28015, db: 'test' };
 
 before(function(done) {
-    r.connect(opt, function(err, conn) {
-        r.dbDrop('test').run(conn, function() {
-            r.dbCreate('test').run(conn, function() {
-                r.tableCreate('t1').run(conn, function() {
-                    r.table('t1').insert({ id: 1, cnt: 'test1' }).run(conn, function() {
-                        r.table('t1').insert({ id: 2, cnt: 'test2' }).run(conn, function() {
-                            done();
-                        });
+    r.connect(opt)
+        .then(function(conn) {
+            return r.dbDrop('test').run(conn)
+                .then(function() {
+                    return r.dbCreate('test').run(conn);
+                })
+                .then(function() {
+                    return r.tableCreate('t1').run(conn);
+                })
+                .finally(function() {
+                    return r.table('t1').insert({ id: 1, cnt: 'test1' }).run(conn).then(function() {
+                        return r.table('t1').insert({ id: 2, cnt: 'test2' }).run(conn);
                     });
-                });
-            });
+                })
+        })
+        .finally(function() {
+            done();
         });
-    });
 });
 
 describe('Connection', function() {
