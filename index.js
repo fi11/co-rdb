@@ -32,15 +32,26 @@ function *setup(conf, conn) {
     try { yield runQuery(rdb.dbCreate(conf.db || 'test'), conn) } catch (err) {}
 
     var tables = conf.tables || {};
+    var queries = [];
 
-    for (var name in tables) {
-        var indexes = [].concat(tables[name]);
+    Object.keys(tables || {}).forEach(function(name) {
+        var table = tables[name] || {};
+        var indexParams = { pk: table.pk || 'id', sk: table.sk || null };
 
-        try { yield runQuery(rdb.tableCreate(name, { primaryKey: indexes[0] || 'id' }), conn); } catch (err) {}
+        queries.push(function *() {
+            yield runQuery(rdb.tableCreate(name, { primaryKey: indexParams.pk }), conn);
 
-        if (indexes[1]) {
-            try { yield runQuery(rdb.table(name).indexCreate(indexes[1]), conn); } catch (err) {}
-        }
+            //TODO: add sk as array
+            if (indexParams.sk) {
+                yield runQuery(rdb.table(name).indexCreate(indexParams.sk), conn);
+            }
+        });
+    });
+    
+    try {
+        yield queries;
+    } catch (err) {
+        console.log(err);
     }
 
     return true;

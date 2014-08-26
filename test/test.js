@@ -1,4 +1,5 @@
-var expect = require('chai').expect;var co = require('co');
+var expect = require('chai').expect;
+var co = require('co');
 var rdb = require('../index');
 var r = require('rethinkdb');
 
@@ -62,8 +63,10 @@ describe('Run query', function() {
 describe('Setup db', function() {
     var conf = {
         db: 'test',
-        tables: { t2: '', t3: 'pk', t4: [,'sk'] }
+        tables: { t2: {}, t3: { pk: 'pk' }, t4: { sk: 'sk' }, t5: { pk: 'pk', sk: 'sk' } }
     };
+
+    //  products: { pk: 'id', sk: 'clientId' }
 
     afterEach(function(done) {
         co(function *(){
@@ -72,6 +75,7 @@ describe('Setup db', function() {
             try { yield rdb.run(r.tableDrop('t2'), conn); } catch(err) {}
             try { yield rdb.run(r.tableDrop('t3'), conn); } catch(err) {}
             try { yield rdb.run(r.tableDrop('t4'), conn); } catch(err) {}
+            try { yield rdb.run(r.tableDrop('t5'), conn); } catch(err) {}
         })(done);
     });
 
