@@ -4,10 +4,13 @@ var rdb = require('../index');
 var r = require('rethinkdb');
 
 var opt = { host:'localhost', port: 28015, db: 'test' };
+var conn;
 
 before(function(done) {
     r.connect(opt)
-        .then(function(conn) {
+        .then(function(connection) {
+            conn = connection;
+
             return r.dbDrop('test').run(conn)
                 .then(function() {
                     return r.dbCreate('test').run(conn);
@@ -29,8 +32,6 @@ before(function(done) {
 describe('Connection', function() {
     it('Should create connection', function(done) {
         co(function *() {
-            var conn = yield rdb.conn(opt);
-
             r.dbList().run(conn, function(err, res) {
                 expect(err).to.be.null;
                 done();
@@ -42,7 +43,6 @@ describe('Connection', function() {
 describe('Run query', function() {
     it('Should run query', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
             var res = yield rdb.run(r.table('t1').get(1), conn);
 
             expect(res).to.eql({ id: 1, cnt: 'test1' });
@@ -51,7 +51,6 @@ describe('Run query', function() {
 
     it('Should apply toArray for cursor', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
             var res = yield rdb.run(r.table('t1'), conn);
 
             expect(res.map(function(i) { return i.cnt }))
@@ -66,23 +65,21 @@ describe('Setup db', function() {
         tables: { t2: {}, t3: { pk: 'pk' }, t4: { sk: 'sk' }, t5: { pk: 'pk', sk: 'sk' } }
     };
 
-    //  products: { pk: 'id', sk: 'clientId' }
-
-    afterEach(function(done) {
+    beforeEach(function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
+            var queries = [
+                rdb.run(r.tableDrop('t2'), conn),
+                rdb.run(r.tableDrop('t3'), conn),
+                rdb.run(r.tableDrop('t4'), conn),
+                rdb.run(r.tableDrop('t5'), conn)
+            ];
 
-            try { yield rdb.run(r.tableDrop('t2'), conn); } catch(err) {}
-            try { yield rdb.run(r.tableDrop('t3'), conn); } catch(err) {}
-            try { yield rdb.run(r.tableDrop('t4'), conn); } catch(err) {}
-            try { yield rdb.run(r.tableDrop('t5'), conn); } catch(err) {}
+            try { yield queries } catch(err) {}
         })(done);
     });
 
     it('Should create table t2 with id as primary key', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
-
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t2').info(), conn);
 
@@ -92,8 +89,6 @@ describe('Setup db', function() {
 
     it('Should create table t3 with pk as primary key', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
-
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t3').info(), conn);
 
@@ -101,13 +96,21 @@ describe('Setup db', function() {
         })(done);
     });
 
-    it('Should create table t3 with sk as secondary index', function(done) {
+    it('Should create table t4 with sk as secondary index', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
-
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t4').info(), conn);
 
+            expect(info.indexes).to.eql(['sk']);
+        })(done);
+    });
+
+    it('Should create table t5 with pk and sk as secondary index', function(done) {
+        co(function *(){
+            yield rdb.setup(conf, conn);
+            var info = yield rdb.run(r.table('t5').info(), conn);
+
+            expect(info.primary_key).to.equal('pk');
             expect(info.indexes).to.eql(['sk']);
         })(done);
     });
@@ -119,21 +122,20 @@ describe('Clear table', function() {
         tables: { one: '', two: '', three: '' }
     };
 
-    afterEach(function(done) {
+    beforeEach(function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
+            var queries = [
+                rdb.run(r.tableDrop('one'), conn),
+                rdb.run(r.tableDrop('two'), conn),
+                rdb.run(r.tableDrop('three'), conn)
+            ];
 
-            try { yield rdb.run(r.tableDrop('one'), conn); } catch(err) {}
-            try { yield rdb.run(r.tableDrop('two'), conn); } catch(err) {}
-            try { yield rdb.run(r.tableDrop('three'), conn); } catch(err) {}
-
+            try { yield queries; } catch(err) {}
         })(done);
     });
 
     it('Should clear only tables from list', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
-
             yield rdb.setup(conf, conn);
 
             yield rdb.run(r.table('one').insert({ data: 'test1 '}), conn);
@@ -152,8 +154,6 @@ describe('Clear table', function() {
 
     it('Should clear all tables', function(done) {
         co(function *(){
-            var conn = yield rdb.conn(opt);
-
             yield rdb.setup(conf, conn);
 
             yield rdb.run(r.table('one').insert({ data: 'test1 '}), conn);

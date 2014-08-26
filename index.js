@@ -12,12 +12,13 @@ function getConnection(options) {
 function runQuery(query, conn) {
     return function(fn) {
         return query.run(conn, function(err, resultOrCursor) {
-            if (err)
+            if (err)  {
                 fn(err);
-            else if (resultOrCursor && resultOrCursor.toArray)
+            } else if (resultOrCursor && resultOrCursor.toArray) {
                 resultOrCursor.toArray(function(err, res) { if (err) fn(err); else fn(null, res); });
-            else
+            } else {
                 fn(null, resultOrCursor);
+            }
         });
     };
 }
