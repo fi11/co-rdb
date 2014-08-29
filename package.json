@@ -1,6 +1,6 @@
 {
   "name": "co-rdb",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Rethinkdb driver wrapper for Co",
   "main": "index",
   "repository": {
