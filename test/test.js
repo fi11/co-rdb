@@ -163,6 +163,31 @@ describe('Setup db', function() {
             expect(info2.primary_key).to.equal('id');
         })(done);
     });
+
+    it('Should create table t8 with multi secondary index', function(done) {
+        co(function *(){
+            var conf = { db: 'test', tables: { t8: { sk: { name: 'sk', multi: true } } } };
+
+            yield rdb.setup(conf, conn);
+            var info = yield rdb.run(r.table('t8').indexStatus(), conn);
+
+            expect(info[0]).to.eql({ index: 'sk', ready: true } );
+        })(done);
+    });
+
+    it('Should create table t9 with multi compound index', function(done) {
+        co(function *(){
+            var conf = {
+                db: 'test',
+                tables: { t9: { sk: { name: 'foo', fields:  [r.row("bar"), r.row("baz")] } } }
+            };
+
+            yield rdb.setup(conf, conn);
+            var info = yield rdb.run(r.table('t9').indexStatus(), conn);
+
+            expect(info[0]).to.eql({ index: 'foo', ready: true } );
+        })(done);
+    });
 });
 
 describe('Clear table', function() {

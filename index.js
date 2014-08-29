@@ -71,9 +71,11 @@ function *setup(conf, conn) {
         queries.push(function *() {
             yield runQuery(rdb.tableCreate(name, { primaryKey: indexParams.pk }), conn);
 
-            //TODO: multy or compond
             if (indexParams.sk) {
-                yield runQuery(rdb.table(name).indexCreate(indexParams.sk), conn);
+                var sk = indexParams.sk;
+                sk = typeof sk === 'string' ? { name: 'sk' } : sk;
+
+                yield runQuery(rdb.table(name).indexCreate(sk.name, sk.multi ? { multi: true } : sk.fields ), conn);
             }
         });
     });
