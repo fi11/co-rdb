@@ -71,7 +71,7 @@ function *setup(conf, conn) {
         queries.push(function *() {
             yield runQuery(rdb.tableCreate(name, { primaryKey: indexParams.pk }), conn);
 
-            //TODO: add sk as array
+            //TODO: multy or compond
             if (indexParams.sk) {
                 yield runQuery(rdb.table(name).indexCreate(indexParams.sk), conn);
             }

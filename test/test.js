@@ -100,26 +100,16 @@ describe('Pool', function() {
 });
 
 describe('Setup db', function() {
-    var conf = {
-        db: 'test',
-        tables: { t2: {}, t3: { pk: 'pk' }, t4: { sk: 'sk' }, t5: { pk: 'pk', sk: 'sk' } }
-    };
-
-    beforeEach(function(done) {
+    before(function(done) {
         co(function *(){
-            var queries = [
-                rdb.run(r.tableDrop('t2'), conn),
-                rdb.run(r.tableDrop('t3'), conn),
-                rdb.run(r.tableDrop('t4'), conn),
-                rdb.run(r.tableDrop('t5'), conn)
-            ];
-
-            try { yield queries } catch(err) {}
+            try { yield rdb.run(r.dbDrop('test'), conn); } catch(err) {}
         })(done);
     });
 
     it('Should create table t2 with id as primary key', function(done) {
         co(function *(){
+            var conf = { db: 'test', tables: { t2: {} } };
+
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t2').info(), conn);
 
@@ -129,6 +119,8 @@ describe('Setup db', function() {
 
     it('Should create table t3 with pk as primary key', function(done) {
         co(function *(){
+            var conf = { db: 'test', tables: { t3: { pk: 'pk' } } };
+
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t3').info(), conn);
 
@@ -138,6 +130,8 @@ describe('Setup db', function() {
 
     it('Should create table t4 with sk as secondary index', function(done) {
         co(function *(){
+            var conf = { db: 'test', tables: { t4: { sk: 'sk' } } };
+
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t4').info(), conn);
 
@@ -147,6 +141,8 @@ describe('Setup db', function() {
 
     it('Should create table t5 with pk and sk as secondary index', function(done) {
         co(function *(){
+            var conf = { db: 'test', tables: { t5: { pk: 'pk', sk: 'sk' } } };
+
             yield rdb.setup(conf, conn);
             var info = yield rdb.run(r.table('t5').info(), conn);
 
@@ -154,23 +150,30 @@ describe('Setup db', function() {
             expect(info.indexes).to.eql(['sk']);
         })(done);
     });
+
+    it('Should create t6 and t7 tables', function(done) {
+        co(function *(){
+            var conf = { db: 'test', tables: { t6: {}, t7: {} } };
+
+            yield rdb.setup(conf, conn);
+            var info1 = yield rdb.run(r.table('t6').info(), conn);
+            var info2 = yield rdb.run(r.table('t6').info(), conn);
+
+            expect(info1.primary_key).to.equal('id');
+            expect(info2.primary_key).to.equal('id');
+        })(done);
+    });
 });
 
 describe('Clear table', function() {
     var conf = {
         db: 'test',
-        tables: { one: '', two: '', three: '' }
+        tables: { one: {}, two: {}, three: {} }
     };
 
     beforeEach(function(done) {
         co(function *(){
-            var queries = [
-                rdb.run(r.tableDrop('one'), conn),
-                rdb.run(r.tableDrop('two'), conn),
-                rdb.run(r.tableDrop('three'), conn)
-            ];
-
-            try { yield queries; } catch(err) {}
+            try { yield rdb.run(r.dbDrop('test'), conn); } catch(err) {}
         })(done);
     });
 
@@ -178,17 +181,25 @@ describe('Clear table', function() {
         co(function *(){
             yield rdb.setup(conf, conn);
 
-            yield rdb.run(r.table('one').insert({ data: 'test1 '}), conn);
-            yield rdb.run(r.table('two').insert({ data: 'test1 '}), conn);
-            yield rdb.run(r.table('three').insert({ id: 3, data: 'test1'}), conn);
+            var queries = [
+                rdb.run(r.table('one').insert({ data: 'test '}), conn),
+                rdb.run(r.table('two').insert({ data: 'test '}), conn),
+                rdb.run(r.table('three').insert({ id: 3, data: 'test'}), conn)
+            ];
+
+            yield queries;
 
             yield rdb.clear(['one', 'two'], conn);
 
-            var one = yield rdb.run(r.table('one'), conn);
-            var two = yield rdb.run(r.table('two'), conn);
-            var three = yield rdb.run(r.table('three'), conn);
+            queries = {
+                one: rdb.run(r.table('one'), conn),
+                two: rdb.run(r.table('two'), conn),
+                three: rdb.run(r.table('three'), conn)
+            };
 
-            expect([].concat(one, two, three)).to.eql([{ data: 'test1', id: 3 }]);
+            var res = yield queries;
+
+            expect([].concat(res.one, res.two, res.three)).to.eql([{ data: 'test', id: 3 }]);
         })(done);
     });
 
@@ -196,17 +207,24 @@ describe('Clear table', function() {
         co(function *(){
             yield rdb.setup(conf, conn);
 
-            yield rdb.run(r.table('one').insert({ data: 'test1 '}), conn);
-            yield rdb.run(r.table('two').insert({ data: 'test1 '}), conn);
-            yield rdb.run(r.table('three').insert({ id: 3, data: 'test1'}), conn);
+            var queries = [
+                rdb.run(r.table('one').insert({ data: 'test '}), conn),
+                rdb.run(r.table('two').insert({ data: 'test '}), conn),
+                rdb.run(r.table('three').insert({ id: 3, data: 'test'}), conn)
+            ];
 
+            yield queries;
             yield rdb.clear(conn);
 
-            var one = yield rdb.run(r.table('one'), conn);
-            var two = yield rdb.run(r.table('two'), conn);
-            var three = yield rdb.run(r.table('three'), conn);
+            queries = {
+                one: rdb.run(r.table('one'), conn),
+                two: rdb.run(r.table('two'), conn),
+                three: rdb.run(r.table('three'), conn)
+            };
 
-            expect([].concat(one, two, three)).to.eql([]);
+            var res = yield queries;
+
+            expect([].concat(res.one, res.two, res.three)).to.eql([]);
         })(done);
     });
 });
