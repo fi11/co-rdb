@@ -10,8 +10,7 @@ function getConnection(options) {
 }
 
 function createPool(connOptions, options) {
-    if (!(connOptions || {}).db) throw new Error('Bad connection options');
-
+    connOptions = connOptions || {};
     options = options || {};
 
     return Pool({
