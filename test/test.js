@@ -51,6 +51,14 @@ describe('Run query', function() {
         })(done);
     });
 
+    it('Should run query with conn as context', function(done) {
+        co(function *(){
+            var res = yield rdb.run.call(conn, r.table('t1').get(1));
+
+            expect(res).to.eql({ id: 1, cnt: 'test1' });
+        })(done);
+    });
+
     it('Should apply toArray for cursor', function(done) {
         co(function *(){
             var res = yield rdb.run(r.table('t1'), conn);
@@ -75,6 +83,16 @@ describe('Pool', function() {
             var pool = rdb.createPool(opt);
 
             var res = yield rdb.run(r.table('t1').get(1), pool);
+
+            expect(res).to.eql({ id: 1, cnt: 'test1' });
+        })(done);
+    });
+
+    it('Should run query with pool as context', function(done) {
+        co(function *(){
+            var pool = rdb.createPool(opt);
+
+            var res = yield rdb.run.call(pool, (r.table('t1').get(1)));
 
             expect(res).to.eql({ id: 1, cnt: 'test1' });
         })(done);

@@ -10,6 +10,8 @@ function getConnection(options) {
 }
 
 function createPool(connOptions, options) {
+    if (!(connOptions || {}).db) throw new Error('Bad connection options');
+
     options = options || {};
 
     return Pool({
@@ -23,8 +25,9 @@ function createPool(connOptions, options) {
 }
 
 function runQuery(query, connOrPool) {
-    return function(fn) {
+    connOrPool = connOrPool || this;
 
+    return function(fn) {
         function callback(err, resultOrCursor) {
             if (err)  {
                 fn(err);
@@ -90,10 +93,13 @@ function *clearTables(tables, conn) {
         tables = yield runQuery(rdb.tableList(), conn);
     }
 
+    var queries = [];
     while(tables.length) {
         var name = tables.pop();
-        try { yield runQuery(rdb.table(name).delete(), conn) } catch (err) {}
+        queries.push(runQuery(rdb.table(name).delete(), conn));
     }
+
+    try { yield queries } catch (err) {}
 
     return true;
 }
